@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>住院溝通板</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f0f13; color: #f0f0f0; min-height: 100vh; padding: 12px; }
+  h1 { text-align: center; font-size: 18px; font-weight: 600; padding: 12px 0 16px; color: #fff; letter-spacing: 1px; }
+
+  .section { margin-bottom: 18px; }
+  .section-title { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding-left: 4px; }
+
+  .grid { display: grid; gap: 10px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .btn {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 14px 8px; border-radius: 14px; border: none; cursor: pointer;
+    font-size: 15px; font-weight: 600; line-height: 1.3; text-align: center;
+    min-height: 72px; transition: transform 0.1s, opacity 0.1s;
+    -webkit-user-select: none; user-select: none;
+  }
+  .btn:active { transform: scale(0.93); opacity: 0.85; }
+  .btn .icon { font-size: 22px; margin-bottom: 4px; }
+  .btn .label { font-size: 14px; }
+
+  .btn-emergency { background: #c0392b; color: #fff; }
+  .btn-body { background: #1a6b8a; color: #fff; }
+  .btn-food { background: #1e7e34; color: #fff; }
+  .btn-talk { background: #6d3b9e; color: #fff; }
+  .btn-custom { background: #2c3e50; color: #fff; border: 2px solid #4a5568; }
+
+  .speaking { animation: pulse 0.6s infinite alternate; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
+
+  .settings-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: #1a1a22; border-radius: 12px; padding: 10px 14px; margin-bottom: 16px;
+  }
+  .settings-bar label { font-size: 12px; color: #888; }
+  .settings-bar input[type=range] { flex: 1; accent-color: #4a90d9; }
+  .settings-bar select { background: #2a2a35; color: #fff; border: 1px solid #444; border-radius: 8px; padding: 4px 8px; font-size: 13px; }
+
+  .add-section {
+    background: #1a1a22; border-radius: 14px; padding: 14px; margin-top: 4px;
+  }
+  .add-section input[type=text] {
+    width: 100%; background: #2a2a35; border: 1px solid #444; border-radius: 10px;
+    color: #fff; font-size: 15px; padding: 10px 12px; margin-bottom: 10px;
+  }
+  .color-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .color-pick { width: 32px; height: 32px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: border-color 0.2s; }
+  .color-pick.selected { border-color: #fff; }
+  .add-btn {
+    width: 100%; background: #4a90d9; color: #fff; border: none; border-radius: 10px;
+    padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .add-btn:active { opacity: 0.8; }
+
+  .custom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .btn-del { position: relative; }
+  .del-x {
+    position: absolute; top: 6px; right: 8px; font-size: 16px; color: rgba(255,255,255,0.5);
+    cursor: pointer; padding: 4px;
+  }
+
+  .voice-status {
+    text-align: center; font-size: 12px; color: #666; padding: 6px 0 2px;
+  }
+
+  @media (min-width: 600px) {
+    body { max-width: 700px; margin: 0 auto; padding: 20px; }
+    h1 { font-size: 22px; }
+    .btn { min-height: 90px; }
+    .btn .icon { font-size: 28px; }
+    .btn .label { font-size: 16px; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🏥 住院溝通板</h1>
+
+<div class="settings-bar">
+  <label>語速</label>
+  <input type="range" id="rateSlider" min="0.5" max="1.5" step="0.1" value="0.8">
+  <label>音量</label>
+  <input type="range" id="volSlider" min="0.1" max="1" step="0.1" value="1">
+  <select id="voiceSelect"><option>載入語音中...</option></select>
+</div>
+<div class="voice-status" id="voiceStatus">點任意按鈕即可發聲</div>
+
+<div class="section">
+  <div class="section-title">🆘 緊急</div>
+  <div class="grid grid-2">
+    <button class="btn btn-emergency" onclick="speak(this,'叫護理師，請來幫我')"><span class="icon">🔔</span><span class="label">叫護理師</span></button>
+    <button class="btn btn-emergency" onclick="speak(this,'我很痛，請來幫我')"><span class="icon">😣</span><span class="label">我很痛</span></button>
+    <button class="btn btn-emergency" onclick="speak(this,'我想吐，我很不舒服')"><span class="icon">🤢</span><span class="label">我想吐</span></button>
+    <button class="btn btn-emergency" onclick="speak(this,'請幫我按緊急鈴')"><span class="icon">🚨</span><span class="label">幫我按鈴</span></button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">🏥 身體</div>
+  <div class="grid grid-3">
+    <button class="btn btn-body" onclick="speak(this,'請幫我翻身')"><span class="icon">🔄</span><span class="label">幫我翻身</span></button>
+    <button class="btn btn-body" onclick="speak(this,'請幫我調整床的高度')"><span class="icon">🛏</span><span class="label">調整床位</span></button>
+    <button class="btn btn-body" onclick="speak(this,'我很冷，請給我毯子')"><span class="icon">🥶</span><span class="label">我很冷</span></button>
+    <button class="btn btn-body" onclick="speak(this,'我很熱，太悶了')"><span class="icon">🥵</span><span class="label">我很熱</span></button>
+    <button class="btn btn-body" onclick="speak(this,'請幫我換尿袋或床單')"><span class="icon">🩺</span><span class="label">換尿袋</span></button>
+    <button class="btn btn-body" onclick="speak(this,'我需要吸痰，請幫我')"><span class="icon">💨</span><span class="label">需要吸痰</span></button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">🍚 飲食</div>
+  <div class="grid grid-3">
+    <button class="btn btn-food" onclick="speak(this,'我想喝水')"><span class="icon">💧</span><span class="label">我想喝水</span></button>
+    <button class="btn btn-food" onclick="speak(this,'我想吃東西了')"><span class="icon">🥣</span><span class="label">我想吃東西</span></button>
+    <button class="btn btn-food" onclick="speak(this,'請幫我準備藥')"><span class="icon">💊</span><span class="label">準備藥</span></button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">💬 溝通</div>
+  <div class="grid grid-3">
+    <button class="btn btn-talk" onclick="speak(this,'謝謝你')"><span class="icon">🙏</span><span class="label">謝謝</span></button>
+    <button class="btn btn-talk" onclick="speak(this,'我聽到了，我明白')"><span class="icon">👍</span><span class="label">我明白</span></button>
+    <button class="btn btn-talk" onclick="speak(this,'請再說一次')"><span class="icon">🔁</span><span class="label">再說一次</span></button>
+    <button class="btn btn-talk" onclick="speak(this,'好的，沒問題')"><span class="icon">✅</span><span class="label">好的</span></button>
+    <button class="btn btn-talk" onclick="speak(this,'不要，謝謝')"><span class="icon">❌</span><span class="label">不要</span></button>
+    <button class="btn btn-talk" onclick="speak(this,'請等一下')"><span class="icon">⏳</span><span class="label">請等一下</span></button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">⭐ 自訂按鈕</div>
+  <div class="custom-grid" id="customGrid"></div>
+
+  <div class="add-section" style="margin-top:12px">
+    <input type="text" id="customText" placeholder="輸入按鈕說的話，例如：幫我開燈" maxlength="30">
+    <div class="color-row" id="colorRow">
+      <div class="color-pick selected" style="background:#8e44ad" data-color="#8e44ad"></div>
+      <div class="color-pick" style="background:#c0392b" data-color="#c0392b"></div>
+      <div class="color-pick" style="background:#16a085" data-color="#16a085"></div>
+      <div class="color-pick" style="background:#d35400" data-color="#d35400"></div>
+      <div class="color-pick" style="background:#2980b9" data-color="#2980b9"></div>
+      <div class="color-pick" style="background:#27ae60" data-color="#27ae60"></div>
+    </div>
+    <button class="add-btn" onclick="addCustom()">＋ 新增按鈕</button>
+  </div>
+</div>
+
+<script>
+let voices = [];
+let selectedColor = '#8e44ad';
+let customButtons = JSON.parse(localStorage.getItem('hb_custom') || '[]');
+
+function initVoices() {
+  voices = speechSynthesis.getVoices();
+  const sel = document.getElementById('voiceSelect');
+  const zhVoices = voices.filter(v => v.lang.startsWith('zh'));
+  if (zhVoices.length === 0) {
+    sel.innerHTML = '<option>使用預設語音</option>';
+    return;
+  }
+  sel.innerHTML = zhVoices.map((v,i) => `<option value="${i}">${v.name}</option>`).join('');
+  const twIdx = zhVoices.findIndex(v => v.lang === 'zh-TW');
+  if (twIdx >= 0) sel.value = twIdx;
+}
+
+speechSynthesis.onvoiceschanged = initVoices;
+initVoices();
+
+function getVoice() {
+  const zhVoices = voices.filter(v => v.lang.startsWith('zh'));
+  const sel = document.getElementById('voiceSelect');
+  return zhVoices[parseInt(sel.value)] || null;
+}
+
+let lastBtn = null;
+function speak(btn, text) {
+  speechSynthesis.cancel();
+  if (lastBtn) lastBtn.classList.remove('speaking');
+  lastBtn = btn;
+  btn.classList.add('speaking');
+  document.getElementById('voiceStatus').textContent = '🔊 ' + text;
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = parseFloat(document.getElementById('rateSlider').value);
+  u.volume = parseFloat(document.getElementById('volSlider').value);
+  const v = getVoice();
+  if (v) u.voice = v;
+  u.lang = 'zh-TW';
+  u.onend = () => { btn.classList.remove('speaking'); document.getElementById('voiceStatus').textContent = '點任意按鈕即可發聲'; };
+  u.onerror = () => { btn.classList.remove('speaking'); document.getElementById('voiceStatus').textContent = '語音播放失敗，請確認設備音量'; };
+  speechSynthesis.speak(u);
+}
+
+function renderCustom() {
+  const grid = document.getElementById('customGrid');
+  grid.innerHTML = '';
+  customButtons.forEach((item, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-del';
+    btn.style.background = item.color;
+    btn.style.color = '#fff';
+    btn.innerHTML = `<span class="label">${item.text}</span><span class="del-x" onclick="delCustom(event,${i})">✕</span>`;
+    btn.addEventListener('click', function(e){ if(!e.target.classList.contains('del-x')) speak(btn, item.text); });
+    grid.appendChild(btn);
+  });
+}
+
+function addCustom() {
+  const t = document.getElementById('customText').value.trim();
+  if (!t) { alert('請輸入按鈕文字'); return; }
+  customButtons.push({ text: t, color: selectedColor });
+  localStorage.setItem('hb_custom', JSON.stringify(customButtons));
+  document.getElementById('customText').value = '';
+  renderCustom();
+}
+
+function delCustom(e, i) {
+  e.stopPropagation();
+  customButtons.splice(i, 1);
+  localStorage.setItem('hb_custom', JSON.stringify(customButtons));
+  renderCustom();
+}
+
+document.getElementById('colorRow').addEventListener('click', function(e) {
+  const pick = e.target.closest('.color-pick');
+  if (!pick) return;
+  document.querySelectorAll('.color-pick').forEach(p => p.classList.remove('selected'));
+  pick.classList.add('selected');
+  selectedColor = pick.dataset.color;
+});
+
+renderCustom();
+</script>
+</body>
+</html>
